@@ -1,0 +1,304 @@
+```{r}
+data <- read.csv("Life Expectancy Data.csv")
+head(data)
+str(data)
+dim(data)
+```
+
+```{r}
+names(data)
+```
+
+```{r}
+# Clean the column names: remove extra spaces
+names(data) <- gsub("\\s+", "", names(data))
+print(names(data))
+```
+```{r}
+# Select relevant variables using the correct column names
+selected_data <- data[, c("Life.expectancy", "Status", "Adult.Mortality", "infant.deaths", "Alcohol", 
+                          "percentage.expenditure", "Hepatitis.B", "Measles", "BMI", "under.five.deaths", 
+                          "Polio", "Total.expenditure", "Diphtheria", "HIV.AIDS", "GDP", 
+                          "Income.composition.of.resources", "thinness..1.19.years", "thinness.5.9.years", "Schooling")]
+
+# Check the structure of the selected data
+str(selected_data)
+
+# Display the first few rows of the selected data
+head(selected_data)
+```
+```{r}
+missing_values <- sapply(selected_data, function(x) sum(is.na(x)))
+missing_values
+```
+
+
+```{r}
+selected_data1= na.omit(selected_data)
+selected_data1
+```
+
+
+```{r}
+missing_values <- sapply(selected_data1, function(x) sum(is.na(x)))
+missing_values
+```
+```{r}
+summary(selected_data1)
+```
+
+```{r}
+# Function to count outliers in a variable
+count_outliers <- function(x) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = TRUE)
+  iqr <- IQR(x, na.rm = TRUE)
+  lower <- qnt[1] - 1.5 * iqr
+  upper <- qnt[2] + 1.5 * iqr
+  return(sum(x < lower | x > upper, na.rm = TRUE))
+}
+
+outlier_counts <- sapply(selected_data1[, sapply(selected_data1, is.numeric)], count_outliers)
+outlier_counts
+
+
+```
+```{r}
+# Adjust these parameters based on your actual number of numeric columns
+num_cols <- length(names(selected_data1)[sapply(selected_data1, is.numeric)])
+batches <- ceiling(num_cols / 9)  # Adjust the denominator to change batch size
+
+for (i in 1:batches) {
+  par(mfrow=c(3, 3), mar=c(2, 2, 2, 2))  # Adjust layout and margins as necessary
+  start_col <- (i - 1) * 9 + 1
+  end_col <- min(i * 9, num_cols)
+  for (col in names(selected_data1)[sapply(selected_data1, is.numeric)][start_col:end_col]) {
+    boxplot(selected_data1[[col]], main=col, col="lightblue", ylab="Values", xlab=col, cex.axis=0.7, cex.main=0.8)
+  }
+  # Resetting graphical parameters to default for each batch
+  par(mfrow=c(1, 1))
+}
+
+
+```
+```{r}
+# Function to cap outliers in a vector
+cap_outliers <- function(x) {
+  qnt <- quantile(x, probs = c(0.25, 0.75), na.rm = TRUE)
+  iqr <- IQR(x, na.rm = TRUE)
+  lower <- qnt[1] - 1.5 * iqr
+  upper <- qnt[2] + 1.5 * iqr
+  x[x < lower] <- lower
+  x[x > upper] <- upper
+  return(x)
+}
+
+# Cap outliers in the numeric columns of selected_data1
+numeric_cols <- sapply(selected_data1, is.numeric)
+selected_data1[, numeric_cols] <- lapply(selected_data1[, numeric_cols], cap_outliers)
+selected_data1
+```
+```{r}
+# Function to count outliers in a variable
+count_outliers <- function(x) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = TRUE)
+  iqr <- IQR(x, na.rm = TRUE)
+  lower <- qnt[1] - 1.5 * iqr
+  upper <- qnt[2] + 1.5 * iqr
+  return(sum(x < lower | x > upper, na.rm = TRUE))
+}
+
+outlier_counts <- sapply(selected_data1[, sapply(selected_data1, is.numeric)], count_outliers)
+outlier_counts
+```
+```{r}
+# Adjust these parameters based on your actual number of numeric columns
+num_cols <- length(names(selected_data1)[sapply(selected_data1, is.numeric)])
+batches <- ceiling(num_cols / 9)  # Adjust the denominator to change batch size
+
+for (i in 1:batches) {
+  par(mfrow=c(3, 3), mar=c(2, 2, 2, 2))  # Adjust layout and margins as necessary
+  start_col <- (i - 1) * 9 + 1
+  end_col <- min(i * 9, num_cols)
+  for (col in names(selected_data1)[sapply(selected_data1, is.numeric)][start_col:end_col]) {
+    boxplot(selected_data1[[col]], main=col, col="yellow", ylab="Values", xlab=col, cex.axis=0.7, cex.main=0.8)
+  }
+  # Resetting graphical parameters to default for each batch
+  par(mfrow=c(1, 1))
+}
+
+```
+
+
+
+```{r}
+library(ggplot2)
+# Scatter plot of Life Expectancy vs. GDP
+ggplot(selected_data1, aes(x = GDP, y = Life.expectancy)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  ggtitle("Scatter Plot of Life Expectancy vs. GDP") +
+  xlab("GDP") +
+  ylab("Life Expectancy")
+```
+
+```{r}
+# Scatter plot of Life Expectancy vs. Schooling
+ggplot(selected_data1, aes(x = Schooling, y = Life.expectancy)) +
+  geom_point(alpha = 0.5, color = "green") +
+  geom_smooth(method = "lm", se = FALSE, color = "darkgreen") +
+  ggtitle("Scatter Plot of Life Expectancy vs. Schooling") +
+  xlab("Schooling") +
+  ylab("Life Expectancy")
+
+```
+
+```{r}
+# Boxplot for Life Expectancy by Status (Developed vs Developing)
+ggplot(selected_data1, aes(x = Status, y = Life.expectancy, fill = Status)) +
+  geom_boxplot() +
+  ggtitle("Life Expectancy by Country Status") +
+  xlab("Status") +
+  ylab("Life Expectancy")
+
+```
+```{r}
+# Histogram for Alcohol Consumption
+ggplot(selected_data1, aes(x = Alcohol)) +
+  geom_histogram(bins = 20, fill = "purple", color = "white") +
+  ggtitle("Histogram of Alcohol Consumption") +
+  xlab("Alcohol Consumption per capita") +
+  ylab("Frequency")
+
+```
+```{r}
+# Density plot for Life Expectancy by Status
+ggplot(selected_data1, aes(x = Life.expectancy, fill = Status)) +
+  geom_density(alpha = 0.5) +
+  ggtitle("Density Plot of Life Expectancy by Status") +
+  xlab("Life Expectancy") +
+  ylab("Density")
+
+```
+```{r}
+# Faceted scatter plot for Life Expectancy vs. BMI, separated by Status
+ggplot(selected_data1, aes(x = BMI, y = Life.expectancy)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~Status) +
+  ggtitle("Life Expectancy vs. BMI by Country Status") +
+  xlab("BMI") +
+  ylab("Life Expectancy") +
+  theme_minimal()
+
+```
+```{r}
+# Scatter plot of Life Expectancy vs. Alcohol Consumption with regression line
+ggplot(selected_data1, aes(x = Alcohol, y = Life.expectancy)) +
+  geom_point(aes(color = Status), alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Life Expectancy vs. Alcohol Consumption") +
+  xlab("Alcohol Consumption (per capita)") +
+  ylab("Life Expectancy") +
+  theme_minimal()
+
+```
+
+
+```{r}
+# Histogram for BMI
+ggplot(selected_data1, aes(x = BMI)) +
+  geom_histogram(bins = 20, fill = "orange", color = "white") +
+  ggtitle("Histogram of BMI") +
+  xlab("BMI") +
+  ylab("Frequency")
+```
+```{r}
+# Correlation matrix
+cor_matrix <- cor(selected_data1[, sapply(selected_data1, is.numeric)], use = "complete.obs")
+
+# Melt the correlation matrix
+library(reshape2)
+melted_cor_matrix <- melt(cor_matrix)
+
+# Heatmap with correlation coefficients
+library(ggplot2)
+ggplot(melted_cor_matrix, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  geom_text(aes(label = sprintf("%.2f", value)), color = "black", size = 3) +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(angle = 0, hjust = 1)) +
+  ggtitle("Correlation Heatmap")
+
+
+```
+```{r}
+# Building the multiple regression model with all selected variables
+full_model <- lm(Life.expectancy ~ ., data = selected_data1)
+
+# Summary of the model to view coefficients and statistics
+summary(full_model)
+
+```
+```{r}
+# Fit the model
+full_model <- lm(Life.expectancy ~ ., data = selected_data1)
+     
+# Q-Q plot of residuals to check normality
+qqnorm(full_model$residuals, main="Q-Q Plot of Residuals")
+qqline(full_model$residuals, col="red")
+
+```
+```{r}
+# Build the multiple regression model using only significant predictors
+significant_model <- lm(Life.expectancy ~ Status + Adult.Mortality + infant.deaths + 
+                        percentage.expenditure + Hepatitis.B + under.five.deaths +
+                        Diphtheria + HIV.AIDS + Income.composition.of.resources +
+                        thinness.5.9.years + Schooling, data = selected_data1)
+
+# Summary of the model to view coefficients and statistics
+summary(significant_model)
+
+```
+
+```{r}
+library(ggplot2)
+
+
+data <- selected_data1 
+
+significant_predictors <- c("Status", "Adult.Mortality", "infant.deaths", 
+                            "percentage.expenditure", "Hepatitis.B", "under.five.deaths", 
+                            "Diphtheria", "HIV.AIDS", "Income.composition.of.resources", 
+                            "thinness.5.9.years", "Schooling")
+
+# Loop through each significant predictor and create a scatter plot with a regression line
+for (predictor in significant_predictors) {
+  p <- ggplot(data, aes_string(x = predictor, y = "Life.expectancy")) + 
+    geom_point(alpha = 0.5) + 
+    geom_smooth(method = "lm", se = FALSE, color = "blue") +
+    labs(title = paste("Scatter Plot of Life Expectancy vs", predictor),
+         x = predictor,
+         y = "Life Expectancy") +
+    theme_minimal()
+  
+  print(p) # Display the plot
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
